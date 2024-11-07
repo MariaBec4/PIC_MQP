@@ -6,13 +6,17 @@ import pandas as pd
 from scipy.optimize import curve_fit
 
 # Import Ring Resonator Data
-folder_path = r"/Users/maria/Downloads/NCMS_Chip1_10_28_24/Data"
-rr = np.loadtxt(f'{folder_path} file path here', skiprows = 1,delimiter=',',usecols = [1,2])
+folder_path = r"/Users/maria/Downloads/NCMS_Chip1_10_28_24/Data/"
+num = 5
+mode = "TE"
+
+rr = pd.read_csv(f'{folder_path}Ring{num}_{mode}_1547-1553.csv', skiprows = 1,delimiter=',')
+
 
 # Append wavelength and transmission to two lists (make sure transmission isn't negative)
-wavelength = []
-power = []
-base = "insert base transmission level here" #base power when there's no resonance
+wavelength = rr["wavelength"]
+power = rr["channel_4"]
+base = -26.5 #base power when there's no resonance
 # This block of code identifies peaks in the data
 j = 0
 scatter = [0]
@@ -23,7 +27,8 @@ for i in range(len(power)):
     if power[i] > base:
         scatterwave.append(wavelength[i])
         scatter.append(power[i])
-     
+
+
 #This block of code seperates the peaks and their data points into seperate rows of a matrix
 newwave = []
 newpower = []
@@ -36,7 +41,8 @@ for i in range(1,len(scatterwave)-1):
         matrixscatter.append(newpower)
         newwave = []
         newpower = []
-        
+
+"""        
 #Defining Lorentzian
 def lorentz(x,mu,g,a):
     result = g/((x-mu)**2 + g**2)
@@ -71,3 +77,4 @@ plt.xlabel("Wavelength (nm)")
 plt.ylabel("Power (dBm)")
 plt.title("Title")
 plt.grid()
+"""
