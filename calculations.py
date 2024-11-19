@@ -4,10 +4,11 @@ import matplotlib.pyplot as plt
 import os
 import pandas as pd
 from scipy.optimize import curve_fit
+import scipy.signal
 
 # Import Ring Resonator Data
 folder_path = r"/Users/maria/Downloads/NCMS_Chip1_10_28_24/Data/"
-num = 5
+num = 10
 mode = "TE"
 
 rr = pd.read_csv(f'{folder_path}Ring{num}_{mode}_1547-1553.csv', skiprows = 1,delimiter=',')
@@ -16,18 +17,23 @@ rr = pd.read_csv(f'{folder_path}Ring{num}_{mode}_1547-1553.csv', skiprows = 1,de
 # Append wavelength and transmission to two lists (make sure transmission isn't negative)
 wavelength = rr["wavelength"]
 power = rr["channel_4"]
-base = -26.5 #base power when there's no resonance
+base = -22.5 #base power when there's no resonance
 # This block of code identifies peaks in the data
 j = 0
-scatter = [0]
-scatterwave = [0]
+scatter = []
+scatterwave = []
 matrixwave = []
 matrixscatter = []
 for i in range(len(power)):
-    if power[i] > base:
+    if power[i] < base:
+        #print("HERE IN LOOP IF")
         scatterwave.append(wavelength[i])
         scatter.append(power[i])
 
+#print(len(scatterwave))
+
+peakIndices, _ = scipy.signal.find_peaks(scatter)
+peakWidths = scipy.signal.peak_widths(scatter, peakIndices, 0.5)
 
 #This block of code seperates the peaks and their data points into seperate rows of a matrix
 newwave = []
@@ -42,20 +48,26 @@ for i in range(1,len(scatterwave)-1):
         newwave = []
         newpower = []
 
-"""        
+
+
+        
 #Defining Lorentzian
 def lorentz(x,mu,g,a):
     result = g/((x-mu)**2 + g**2)
     return a*result + base
 
+
 #Fitting Lorentzian to each peak in the matrix 
 #Unfortunately, non-linear least squares method requires a fairly accurate guess to fit to the peaks.
-guess1 = "Insert approx FWHM"
-guess2 = "Insert approx normalisation factor"
-guess3 = base
+guess1 = 0.005
+guess2 = 3 #extinction ratio
+#guess3 = base
 qfactor = []
+
+
 for i in range(j):
-    pars,cov = curve_fit(lorentz,matrixwave[i],matrixscatter[i],p0=[np.mean(matrixwave[i]),guess1,guess2,guess3])
+    guess1 = peakWidths[i]
+    pars,cov = curve_fit(lorentz,matrixwave[i],matrixscatter[i],p0=[np.mean(matrixwave[i]),guess1,guess2])
     plt.scatter(np.arange(matrixwave[i][0],matrixwave[i][-1],0.0001),-lorentz(np.arange(matrixwave[i][0],matrixwave[i][-1],0.0001),*pars),color='blue',marker='.')
     freq = pars[0]
     fwhm = 2*pars[1]
@@ -69,12 +81,10 @@ for i in range(j):
 fsr = []
 for i in range(2,j):
     fsr.append(qfactor[i][1] - qfactor[i-2][1])
-    
-        
+
 
 
 plt.xlabel("Wavelength (nm)")
 plt.ylabel("Power (dBm)")
 plt.title("Title")
 plt.grid()
-"""
